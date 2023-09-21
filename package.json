@@ -9,7 +9,9 @@
     "lint": "eslint --ext .ts,.js,.tsx . && prettier --check \"./**/*.{ts,js,tsx}\"",
     "lint:fix": "eslint --ext .ts,.js,.tsx . --fix && prettier --write \"./**/*.{ts,js,tsx}\"",
     "format": "prettier --write './**/*.{js,ts,tsx,scss}'",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@types/node": "20.6.2",
@@ -26,15 +28,26 @@
     "typescript": "5.2.2"
   },
   "devDependencies": {
+    "@storybook/addon-essentials": "^7.4.3",
+    "@storybook/addon-interactions": "^7.4.3",
+    "@storybook/addon-links": "^7.4.3",
+    "@storybook/addon-onboarding": "^1.0.8",
+    "@storybook/addon-styling": "^1.3.7",
+    "@storybook/blocks": "^7.4.3",
+    "@storybook/nextjs": "^7.4.3",
+    "@storybook/react": "^7.4.3",
+    "@storybook/testing-library": "^0.2.1",
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
     "daisyui": "^3.7.7",
     "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-storybook": "^0.6.14",
     "eslint-plugin-tailwindcss": "^3.13.0",
     "eslint-plugin-unused-imports": "^3.0.0",
     "husky": "^8.0.0",
     "lint-staged": "^14.0.1",
-    "prettier": "^3.0.3"
+    "prettier": "^3.0.3",
+    "storybook": "^7.4.3"
   },
   "lint-staged": {
     "*.{tsx,ts}": "pnpm lint"
