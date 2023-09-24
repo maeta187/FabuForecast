@@ -19,6 +19,7 @@ module.exports = {
     '@typescript-eslint/no-unsafe-member-access': 'error',
     '@typescript-eslint/no-unsafe-return': 'error',
     'unused-imports/no-unused-imports-ts': 'warn',
+    'tailwindcss/no-custom-classname': 'off',
     'import/order': [
       'error',
       {
