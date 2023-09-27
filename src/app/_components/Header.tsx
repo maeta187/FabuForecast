@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 const Header = () => {
   return (
     <header className='navbar bg-base-300'>
@@ -19,15 +21,18 @@ const Header = () => {
             </svg>
           </label>
         </div>
-        <div className='mx-2 flex-1 px-2'>Navbar Title</div>
+        <div className='flex-1 px-2'>
+          {/* TODO: ホーム画面、ログイン機能実装後リンクにするか検討する */}
+          FabuForecast
+        </div>
         <div className='hidden flex-none lg:block'>
           <ul className='menu menu-horizontal'>
-            {/* Navbar menu content here */}
+            {/* TODO: ログイン機能実装後セッションデータをもとにナビバーを切り替えるようにする */}
             <li>
-              <a>Navbar Item 1</a>
+              <Link href='/signin'>サインイン</Link>
             </li>
             <li>
-              <a>Navbar Item 2</a>
+              <Link href='/login'>ログイン</Link>
             </li>
           </ul>
         </div>
