@@ -1,0 +1,25 @@
+import { Meta } from '@storybook/blocks'
+
+import * as Sidebar from './Sidebar.stories'
+
+# Sidebar
+
+## 仕様
+
+こちらのコンポーネントは、daisyuiのナビバーをベースにしています。
+Headerなどと併用して使用し、タブレットサイズ以降表示されます。
+
+## サンプルコード
+
+```tsx
+<div className='drawer'>
+  <input id='my-drawer-3' type='checkbox' className='drawer-toggle' />
+  <div className='drawer-content flex flex-col'>
+    <Header />
+    {children}
+  </div>
+  <SideBar />
+</div>
+```
+
+<Meta of={Sidebar} />
