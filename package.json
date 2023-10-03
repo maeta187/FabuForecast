@@ -14,10 +14,12 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@prisma/client": "^5.3.1",
     "@types/node": "20.6.2",
     "@types/react": "18.2.22",
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.15",
+    "bcryptjs": "^2.4.3",
     "eslint": "8.49.0",
     "eslint-config-next": "13.4.19",
     "next": "13.4.19",
@@ -38,6 +40,7 @@
     "@storybook/nextjs": "^7.4.3",
     "@storybook/react": "^7.4.3",
     "@storybook/testing-library": "^0.2.1",
+    "@types/bcryptjs": "^2.4.4",
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
     "daisyui": "^3.7.7",
@@ -48,7 +51,9 @@
     "husky": "^8.0.0",
     "lint-staged": "^14.0.1",
     "prettier": "^3.0.3",
-    "storybook": "^7.4.3"
+    "prisma": "^5.3.1",
+    "storybook": "^7.4.3",
+    "ts-node": "^10.9.1"
   },
   "lint-staged": {
     "*.{tsx,ts}": "pnpm lint"
