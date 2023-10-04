@@ -56,6 +56,9 @@ dependencies:
   typescript:
     specifier: 5.2.2
     version: 5.2.2
+  valibot:
+    specifier: ^0.18.0
+    version: 0.18.0
 
 devDependencies:
   '@storybook/addon-essentials':
@@ -11234,6 +11237,10 @@ packages:
       '@types/istanbul-lib-coverage': 2.0.4
       convert-source-map: 1.9.0
     dev: true
+
+  /valibot@0.18.0:
+    resolution: {integrity: sha512-JpJ1ITTIAA4kuLDX5ygnjuMdeHryNI4cqx3vWQFisytTzH3/RBcTYJO336RSd/gRRRrYhIWf2RuST76p4TbdBw==}
+    dev: false
 
   /validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
