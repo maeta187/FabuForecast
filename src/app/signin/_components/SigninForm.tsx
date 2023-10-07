@@ -24,7 +24,6 @@ const SigninForm = () => {
         void handleSubmit(handleOnSubmit)(event)
       }}
     >
-      <h1>SigninForm</h1>
       <div className='flex w-80 flex-col'>
         <div>
           <label htmlFor='user-id' className=''>
