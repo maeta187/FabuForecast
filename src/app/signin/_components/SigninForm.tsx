@@ -25,7 +25,7 @@ const SigninForm = () => {
       }}
     >
       <h1>SigninForm</h1>
-      <div className='flex flex-col w-80'>
+      <div className='flex w-80 flex-col'>
         <div>
           <label htmlFor='user-id' className=''>
             ユーザーID
@@ -41,12 +41,12 @@ const SigninForm = () => {
           {...register('userId')}
         />
         {formatError.userId && (
-          <span className='text-xs text-error mt-1'>
+          <span className='mt-1 text-xs text-error'>
             {formatError.userId.message}
           </span>
         )}
       </div>
-      <div className='mt-6 flex flex-col w-80'>
+      <div className='mt-6 flex w-80 flex-col'>
         <div>
           <label htmlFor='email' className=''>
             メールアドレス
@@ -62,12 +62,12 @@ const SigninForm = () => {
           {...register('email')}
         />
         {formatError.email && (
-          <span className='text-xs text-error mt-1'>
+          <span className='mt-1 text-xs text-error'>
             {formatError.email.message}
           </span>
         )}
       </div>
-      <div className='mt-6 flex flex-col w-80'>
+      <div className='mt-6 flex w-80 flex-col'>
         <div>
           <label htmlFor='password' className=''>
             パスワード
@@ -83,12 +83,12 @@ const SigninForm = () => {
           {...register('password')}
         />
         {formatError.password && (
-          <span className='text-xs text-error mt-1'>
+          <span className='mt-1 text-xs text-error'>
             {formatError.password.message}
           </span>
         )}
       </div>
-      <div className='mt-6 flex flex-col w-80'>
+      <div className='mt-6 flex w-80 flex-col'>
         <div>
           <label htmlFor='password-confirm' className=''>
             パスワード（確認用）
@@ -104,7 +104,7 @@ const SigninForm = () => {
           {...register('passwordConfirm')}
         />
         {formatError.passwordConfirm && (
-          <span className='text-xs text-error mt-1'>
+          <span className='mt-1 text-xs text-error'>
             {formatError.passwordConfirm.message}
           </span>
         )}
