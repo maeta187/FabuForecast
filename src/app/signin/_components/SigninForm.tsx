@@ -1,7 +1,7 @@
 'use client'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import { signinFormSchema, signinFormData } from '@/lib/schema'
+import { signinFormSchema, signinFormData } from '@/utils/validations/schema'
 
 const SigninForm = () => {
   const handleOnSubmit: SubmitHandler<signinFormData> = (data) => {
