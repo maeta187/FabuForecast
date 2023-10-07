@@ -33,4 +33,11 @@ export const signinFormSchema = z
     path: ['passwordConfirm']
   })
 
+export const loginFormSchema = z.object({
+  email: emailValidation,
+  password: passwordValidation
+})
+
 export type signinFormData = z.infer<typeof signinFormSchema>
+
+export type loginFormData = z.infer<typeof loginFormSchema>
