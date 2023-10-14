@@ -1,6 +1,7 @@
 'use client'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { SubmitHandler, useForm } from 'react-hook-form'
+import { prefectures } from '@/utils/contents'
 import { signinFormSchema, signinFormData } from '@/utils/validations/schema'
 
 const SigninForm = () => {
@@ -63,6 +64,31 @@ const SigninForm = () => {
         {formatError.email && (
           <span className='mt-1 text-xs text-error'>
             {formatError.email.message}
+          </span>
+        )}
+      </div>
+      <div className='mt-6 flex w-80 flex-col'>
+        <div>
+          <label htmlFor='prefecture' className=''>
+            登録地域
+          </label>
+          <span className='text-xs text-error'>※必須</span>
+        </div>
+        <select
+          id='prefecture'
+          className='select select-accent w-full max-w-xs'
+          {...register('prefecture')}
+        >
+          <option value={''}>選択してください</option>
+          {prefectures.map((prefecture) => (
+            <option key={prefecture.name} value={prefecture.value}>
+              {prefecture.name}
+            </option>
+          ))}
+        </select>
+        {formatError.prefecture && (
+          <span className='mt-1 text-xs text-error'>
+            {formatError.prefecture.message}
           </span>
         )}
       </div>
