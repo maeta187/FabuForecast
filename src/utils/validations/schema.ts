@@ -11,6 +11,8 @@ const emailValidation = z
   .min(1, '入力が必須の項目です')
   .email('正しいメールアドレスの形式で入力してください')
 
+const prefectureValidation = z.string().min(1, '入力が必須の項目です')
+
 const passwordValidation = z
   .string()
   .min(1, '入力が必須の項目です')
@@ -25,6 +27,7 @@ export const signinFormSchema = z
   .object({
     userId: userIdValidation,
     email: emailValidation,
+    prefecture: prefectureValidation,
     password: passwordValidation,
     passwordConfirm: passwordValidation
   })
