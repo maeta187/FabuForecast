@@ -11,6 +11,14 @@ async function main() {
     create: {
       email: 'admin@admin.com',
       name: 'Admin',
+      prefecture: {
+        create: {
+          name: '東京都',
+          value: 'tokyo',
+          latitude: 35.6895,
+          longitude: 139.6917
+        }
+      },
       password
     }
   })
