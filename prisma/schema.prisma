@@ -15,4 +15,13 @@ model User {
   name     String
   email    String @unique
   password String
+
+model Prefecture {
+  id        Int      @id @default(autoincrement())
+  name      String
+  value     String   @unique
+  latitude  Float
+  longitude Float
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
 }
