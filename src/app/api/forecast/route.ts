@@ -7,6 +7,9 @@ export async function GET() {
     'https://api.open-meteo.com/v1/forecast?latitude=34.4&longitude=132.45&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo'
 
   const response = await fetch(url)
+  if (!response.ok) {
+    return NextResponse.error()
+  }
   const data: Forecast = await response.json()
 
   return NextResponse.json(data)
