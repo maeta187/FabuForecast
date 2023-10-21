@@ -5,8 +5,19 @@ import { prefectures } from '@/utils/contents'
 import { signinFormSchema, signinFormData } from '@/utils/validations/schema'
 
 const SigninForm = () => {
-  const handleOnSubmit: SubmitHandler<signinFormData> = (data) => {
-    console.log(data)
+  const handleOnSubmit: SubmitHandler<signinFormData> = async (data) => {
+    try {
+      const res = await fetch('/api/signin', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      console.log(res)
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   const {
