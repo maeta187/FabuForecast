@@ -1,21 +1,36 @@
 import { hash } from 'bcryptjs'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { findPrefecture } from '@/utils'
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = (await req.json()) as {
-      name: string
+    const { userId, email, password, prefecture } = (await req.json()) as {
+      userId: string
       email: string
       password: string
+      prefecture: string
+    }
+    const prefectureData = findPrefecture(prefecture)
+    if (!prefectureData) {
+      throw new Error('都道府県が見つかりませんでした')
     }
     const hashedPassword = await hash(password, 12)
 
     const user = await prisma.user.create({
       data: {
-        name,
+        name: userId,
         email: email.toLowerCase(),
-        password: hashedPassword
+        password: hashedPassword,
+        prefecture: {
+          connectOrCreate: {
+            create: prefectureData,
+            where: prefectureData
+          }
+        }
+      },
+      include: {
+        prefecture: true
       }
     })
 
