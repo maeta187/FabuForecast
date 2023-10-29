@@ -1,10 +1,15 @@
 'use client'
+import { memo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useRouter } from 'next/navigation'
 import { SubmitHandler, useForm } from 'react-hook-form'
+import { useToast } from '@/contexts/ToastContext'
 import { prefectures } from '@/utils/contents'
 import { signinFormSchema, signinFormData } from '@/utils/validations/schema'
 
-const SigninForm = () => {
+const SigninForm = memo(() => {
+  const { showToast } = useToast()
+  const router = useRouter()
   const handleOnSubmit: SubmitHandler<signinFormData> = async (data) => {
     try {
       const res = await fetch('/api/signin', {
@@ -14,7 +19,16 @@ const SigninForm = () => {
           'Content-Type': 'application/json'
         }
       })
-      console.log(res)
+
+      const toastMessage = res.ok ? '登録に成功しました' : '登録に失敗しました'
+      const toastType = res.ok ? 'success' : 'error'
+
+      showToast(`${toastMessage}`, `${toastType}`)
+
+      if (res.ok) {
+        // TODO: トップページに遷移した後にToastを表示する
+        router.push('/')
+      }
     } catch (error) {
       console.error(error)
     }
@@ -156,6 +170,8 @@ const SigninForm = () => {
       </div>
     </form>
   )
-}
+})
+
+SigninForm.displayName = 'SigninForm'
 
 export default SigninForm
