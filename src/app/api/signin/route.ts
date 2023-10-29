@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
     const prefectureData = findPrefecture(prefecture)
     if (!prefectureData) {
-      throw new Error('都道府県が見つかりませんでした')
+      throw new Error('都道府県が見つかりませんでした', { cause: 400 })
     }
     const hashedPassword = await hash(password, 12)
 
@@ -41,19 +41,17 @@ export async function POST(req: Request) {
       }
     })
   } catch (error) {
-    // TODO: サインイン機能実装時にエラー処理を実装する
     if (error instanceof Error) {
+      const status = error.cause ?? 500
       return new NextResponse(
         JSON.stringify({
           status: 'error',
           message: error.message
         }),
-        { status: 500 }
+        { status: status as number }
       )
-    } else if (typeof error === 'string') {
-      console.log(error)
     } else {
-      console.log('unexpected error')
+      return new NextResponse('Unexpected error', { status: 500 })
     }
   }
 }
