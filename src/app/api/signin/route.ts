@@ -1,21 +1,36 @@
 import { hash } from 'bcryptjs'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { findPrefecture } from '@/utils'
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = (await req.json()) as {
-      name: string
+    const { userId, email, password, prefecture } = (await req.json()) as {
+      userId: string
       email: string
       password: string
+      prefecture: string
+    }
+    const prefectureData = findPrefecture(prefecture)
+    if (!prefectureData) {
+      throw new Error('都道府県が見つかりませんでした', { cause: 400 })
     }
     const hashedPassword = await hash(password, 12)
 
     const user = await prisma.user.create({
       data: {
-        name,
+        name: userId,
         email: email.toLowerCase(),
-        password: hashedPassword
+        password: hashedPassword,
+        prefecture: {
+          connectOrCreate: {
+            create: prefectureData,
+            where: prefectureData
+          }
+        }
+      },
+      include: {
+        prefecture: true
       }
     })
 
@@ -26,19 +41,17 @@ export async function POST(req: Request) {
       }
     })
   } catch (error) {
-    // TODO: サインイン機能実装時にエラー処理を実装する
     if (error instanceof Error) {
+      const status = error.cause ?? 500
       return new NextResponse(
         JSON.stringify({
           status: 'error',
           message: error.message
         }),
-        { status: 500 }
+        { status: status as number }
       )
-    } else if (typeof error === 'string') {
-      console.log(error)
     } else {
-      console.log('unexpected error')
+      return new NextResponse('Unexpected error', { status: 500 })
     }
   }
 }
