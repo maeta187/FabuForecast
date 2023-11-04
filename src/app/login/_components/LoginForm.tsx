@@ -1,11 +1,41 @@
 'use client'
+import { memo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import { SubmitHandler, useForm } from 'react-hook-form'
+import { useToast } from '@/contexts/ToastContext'
 import { loginFormSchema, loginFormData } from '@/utils/validations/schema'
 
-const LoginForm = () => {
-  const handleOnSubmit: SubmitHandler<loginFormData> = (data) => {
-    console.log(data)
+const LoginForm = memo(() => {
+  const router = useRouter()
+  const { showToast } = useToast()
+  const handleOnSubmit: SubmitHandler<loginFormData> = async (data) => {
+    try {
+      const { email, password } = data
+
+      const res = await signIn('credentials', {
+        email: email,
+        password: password,
+        redirect: false
+      })
+
+      const toastMessage = res?.ok
+        ? 'ログイン完了しました'
+        : 'ログイン失敗しました'
+      const toastType = res?.ok ? 'success' : 'error'
+
+      showToast(`${toastMessage}`, `${toastType}`)
+
+      if (res?.ok) {
+        // TODO: トップページに遷移した後にToastを表示する
+        router.replace('/')
+      } else {
+        throw new Error(res?.error ?? 'ログイン失敗しました')
+      }
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   const {
@@ -77,6 +107,8 @@ const LoginForm = () => {
       </div>
     </form>
   )
-}
+})
+
+LoginForm.displayName = 'LoginForm'
 
 export default LoginForm
