@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server'
-import { Forecast } from '@/types'
+import { ResponseForecast } from '@/types'
 
 export async function GET() {
   // TODO: ログイン機能実装後セッションデータから緯度経度を取得する
   const url =
     'https://api.open-meteo.com/v1/forecast?latitude=34.4&longitude=132.45&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo'
 
-  const response = await fetch(url)
+  const response = await fetch(url, {
+    headers: {
+      'Accept-Language': 'ja-JP'
+    }
+  })
   if (!response.ok) {
     return NextResponse.error()
   }
-  const data: Forecast = await response.json()
+  const data: ResponseForecast = await response.json()
 
   return NextResponse.json(data)
 }
