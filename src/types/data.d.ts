@@ -17,3 +17,10 @@ type ResponseDaily = {
 export interface ResponseForecast {
   daily: ResponseDaily
 }
+
+// 天気予報
+export type Forecast = {
+  date: string
+  maxTemperature: string
+  minTemperature: string
+}
