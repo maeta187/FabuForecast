@@ -7,13 +7,13 @@ export type Prefecture = {
 }
 
 // 天気取得APIの日付
-type Daily = {
+type ResponseDaily = {
   time: string[]
-}
-
-// 天教
-export interface Forecast {
-  daily: Daily
   temperature_2m_max: string[]
   temperature_2m_min: string[]
+}
+
+// 天教APIのレスポンス
+export interface ResponseForecast {
+  daily: ResponseDaily
 }
