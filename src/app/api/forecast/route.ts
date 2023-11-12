@@ -9,7 +9,8 @@ export async function GET() {
   const response = await fetch(url, {
     headers: {
       'Accept-Language': 'ja-JP'
-    }
+    },
+    cache: 'no-cache'
   })
   if (!response.ok) {
     return NextResponse.error()
