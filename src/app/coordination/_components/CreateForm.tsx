@@ -1,4 +1,8 @@
-const CreateForm = () => {
+'use client'
+
+import { Forecast } from '@/types'
+
+const CreateForm = ({ forecastData }: { forecastData: Forecast[] }) => {
   return (
     <div>
       <form action=''>
@@ -19,46 +23,67 @@ const CreateForm = () => {
             <div className='grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4 xl:gap-8'>
               {/* <div className='flex flex-col overflow-hidden rounded-lg border bg-white'> */}
               {/* <div className='flex flex-1 flex-col p-4 sm:p-6'> */}
-              <div className='flex flex-1 flex-col overflow-hidden rounded-lg border bg-white p-4 sm:p-6'>
-                <h2 className='mb-2 text-lg font-semibold text-gray-800'>
-                  <a
-                    href='#'
-                    className='transition duration-100 hover:text-indigo-500 active:text-indigo-600'
+              {/* カードコンテンツ:開始 */}
+              {forecastData.map(
+                ({ date, maxTemperature, minTemperature }, index) => (
+                  <div
+                    className='flex flex-1 flex-col overflow-hidden rounded-lg border bg-white p-4 sm:p-6'
+                    key={index}
                   >
-                    New trends in Tech
-                  </a>
-                </h2>
-
-                <p className='mb-8 text-gray-500'>
-                  This is a section of some simple filler text, also known as
-                  placeholder text. It shares some characteristics of a real
-                  written text.
-                </p>
-
-                <div className='mt-auto flex items-end justify-between'>
-                  <div className='flex items-center gap-2'>
-                    <div className='h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-100'>
-                      {/* <img
-                          src='https://images.unsplash.com/photo-1611898872015-0571a9e38375?auto=format&q=75&fit=crop&w=64'
-                          loading='lazy'
-                          alt='Photo by Brock Wegner'
-                          className='h-full w-full object-cover object-center'
-                        /> */}
-                    </div>
-
                     <div>
-                      <span className='block text-indigo-500'>Mike Lane</span>
-                      <span className='block text-sm text-gray-400'>
-                        July 19, 2021
-                      </span>
+                      <div className=''>
+                        <p>{date}</p>
+                      </div>
+                      <div className=''>
+                        <p>最高気温&#65306;{maxTemperature}</p>
+                      </div>
+                      <div className=''>
+                        <p>最低気温&#65306;{minTemperature}</p>
+                      </div>
+                    </div>
+                    <div className='mt-3'>
+                      <div className='flex flex-col'>
+                        <label htmlFor='outerwear' className=''>
+                          アウター
+                        </label>
+                        <input
+                          id='outerwear'
+                          type='text'
+                          autoComplete='text'
+                          placeholder='例&#65306;レザージャケット'
+                          className='input input-bordered input-accent'
+                        />
+                      </div>
+                      {/* TODO: 機能実装の際、トップスは複数登録できるようにする */}
+                      <div className='mt-3 flex flex-col'>
+                        <label htmlFor='' className=''>
+                          トップス
+                        </label>
+                        <input
+                          id=''
+                          type='text'
+                          autoComplete='text'
+                          placeholder='例&#65306;Tシャツ'
+                          className='input input-bordered input-accent'
+                        />
+                      </div>
+                      <div className='mt-3 flex flex-col'>
+                        <label htmlFor='bottoms' className=''>
+                          ボトムス
+                        </label>
+                        <input
+                          id='bottoms'
+                          type='text'
+                          autoComplete='text'
+                          placeholder='例&#65306;デニムパンツ'
+                          className='input input-bordered input-accent'
+                        />
+                      </div>
                     </div>
                   </div>
-
-                  <span className='rounded border px-2 py-1 text-sm text-gray-500'>
-                    Article
-                  </span>
-                </div>
-              </div>
+                )
+              )}
+              {/* カードコンテンツ:終了 */}
               {/* </div> */}
             </div>
           </div>
