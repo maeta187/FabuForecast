@@ -10,11 +10,10 @@ export default async function Page() {
   const forecast: ResponseForecast = await response.json()
   if (!forecast) return
   const forecastData = forecastDataProcessing(forecast)
-  console.log(forecastData)
   return (
     <div>
       <div className='relative mx-auto my-0 h-screen w-10/12'>
-        <CreateForm />
+        <CreateForm forecastData={forecastData} />
       </div>
     </div>
   )
