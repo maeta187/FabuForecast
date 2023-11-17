@@ -24,3 +24,13 @@ export type Forecast = {
   maxTemperature: string
   minTemperature: string
 }
+
+export type CoordinationList = {
+  outerwear: string
+  tops: string
+  bottoms: string
+}
+
+export type CoordinateFormItems = {
+  items: CoordinationList[]
+}
