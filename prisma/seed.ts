@@ -11,6 +11,20 @@ async function main() {
     create: {
       email: 'admin@admin.com',
       name: 'Admin',
+      coordinationLists: {
+        create: [
+          {
+            outerwear: 'Jacket',
+            tops: 'T-shirt',
+            bottoms: 'Jeans'
+          },
+          {
+            outerwear: 'Coat',
+            tops: 'Sweater',
+            bottoms: 'Chinos'
+          }
+        ]
+      },
       prefecture: {
         create: {
           name: '東京都',
