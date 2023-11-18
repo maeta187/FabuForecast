@@ -16,6 +16,7 @@ model User {
   email    String @unique
   password String
   prefecture Prefecture?
+  coordinationLists Coordinate[]
 }
 
 model Prefecture {
@@ -26,4 +27,13 @@ model Prefecture {
   longitude Float
   user      User     @relation(fields: [userId], references: [id])
   userId    String   @unique
+}
+
+model Coordinate {
+  id         Int    @id @default(autoincrement())
+  outerwear  String
+  tops       String
+  bottoms    String
+  user       User   @relation(fields: [userId], references: [id])
+  userId     String
 }
