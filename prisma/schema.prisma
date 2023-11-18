@@ -27,3 +27,12 @@ model Prefecture {
   user      User     @relation(fields: [userId], references: [id])
   userId    String   @unique
 }
+
+model Coordinate {
+  id         Int    @id @default(autoincrement())
+  outerwear  String
+  tops       String
+  bottoms    String
+  user       User   @relation(fields: [userId], references: [id])
+  userId     String
+}
