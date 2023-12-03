@@ -18,8 +18,19 @@ const CreateForm = ({ forecastData }: { forecastData: Forecast[] }) => {
       const { user } = session
       setSession(user)
     }
+    const getUser = async () => {
+      const res = await fetch(`/api/user/${session?.id}`, {
+        cache: 'no-cache'
+      })
+      const { user } = await res.json()
+      console.log(user)
+    }
+
     getSession()
+    getUser()
+    // console.log(session)
   }, [])
+
   const { register, control, handleSubmit } = useForm({
     defaultValues: {
       items: forecastData.map(() => ({ outerwear: '', tops: '', bottoms: '' }))
