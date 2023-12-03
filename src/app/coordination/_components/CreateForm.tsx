@@ -1,9 +1,36 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
-import { Forecast, CoordinateFormItems } from '@/types'
+import { Forecast, CoordinateFormItems, Session } from '@/types'
 
 const CreateForm = ({ forecastData }: { forecastData: Forecast[] }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [session, setSession] = useState<Session | null>(null)
+
+  useEffect(() => {
+    // NOTE: セッション情報を取得するる頻度が増えたら切り出す
+    const getSession = async () => {
+      const res = await fetch('/api/session', {
+        cache: 'no-cache'
+      })
+      const { session } = await res.json()
+      const { user } = session
+      setSession(user)
+    }
+    const getUser = async () => {
+      const res = await fetch(`/api/user/${session?.id}`, {
+        cache: 'no-cache'
+      })
+      const { user } = await res.json()
+      console.log(user)
+    }
+
+    getSession()
+    getUser()
+    // console.log(session)
+  }, [])
+
   const { register, control, handleSubmit } = useForm({
     defaultValues: {
       items: forecastData.map(() => ({ outerwear: '', tops: '', bottoms: '' }))

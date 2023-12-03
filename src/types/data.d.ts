@@ -34,3 +34,9 @@ export type CoordinationList = {
 export type CoordinateFormItems = {
   items: CoordinationList[]
 }
+
+type Session = {
+  id: string
+  name: string
+  email: string
+}
