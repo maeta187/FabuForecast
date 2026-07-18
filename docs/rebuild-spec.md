@@ -49,6 +49,8 @@
 | 15 | 天気予報 API | **気象庁 JSON(bosai)** | 国内特化。府県予報区コードで取得でき地域選択の設計と直結。無料・出典明記で商用利用可(§9 参照) |
 | 16 | Lint / Format | **oxlint + oxfmt(VoidZero / Oxc)** | Rust 製で高速。oxlint は 1.0 安定版、oxfmt は Prettier 互換(JS/TS 適合テスト100%)で Tailwind クラスソート内蔵 |
 | 17 | 画像ストレージ | **S3 互換 API 前提(サービスは未定)** | コーデ写真(Should)の保存先。コードは S3 互換 SDK で書き、契約先(R2 / S3 等)は実装時に決定。ローカル開発は MinIO(Docker) |
+| 18 | TypeScript | **7 系に統一** | 2026-07 GA の Go ネイティブコンパイラ。型検査が約10倍高速。`typescript@latest` がそのまま 7 系のため移行コストはほぼゼロ(安定版プログラマティック API は 7.1 待ちだが本スタックでは影響なし) |
+| 19 | エラーハンドリング | **neverthrow を api 層に導入** | 外部 I/O(気象庁・DB・S3)の失敗を `Result` / `ResultAsync` の型付きエラーで表現。軽量で段階導入可能。web には導入しない(Effect は多機能だが本規模には過剰と判断) |
 
 ---
 
@@ -57,13 +59,14 @@
 | 分類 | 技術 |
 | --- | --- |
 | モノレポ | pnpm workspace + Turborepo |
-| フロントエンド | Next.js 15(App Router)/ React 19 / TypeScript |
+| フロントエンド | Next.js 15(App Router)/ React 19 / TypeScript 7 |
 | スタイリング | Tailwind CSS v4 + shadcn/ui |
 | バックエンド | Hono 4 + @hono/node-server(Node.js) |
 | 認証 | Better Auth(email/password、Drizzle アダプタ) |
 | DB / ORM | PostgreSQL + Drizzle ORM + drizzle-kit |
 | API 型共有 | Hono RPC(`hc<AppType>`) |
 | バリデーション | Zod(共有パッケージ) |
+| エラーハンドリング | neverthrow(`apps/api` のみ) |
 | フォーム | React Hook Form + @hookform/resolvers |
 | 外部 API | 気象庁 天気予報 JSON(API キー不要・出典明記で利用) |
 | テスト | Vitest |
@@ -266,6 +269,7 @@ export const coordinate = pgTable(
 | `POST /api/uploads` | 必要 | コーデ写真用の署名付きURL(presigned URL)を発行(Should)。ブラウザからストレージへ直接 PUT し、API サーバーに画像は通さない |
 
 - セッション判定はミドルウェアで `auth.api.getSession({ headers })` を実行し、`c.get('user')` に格納。未認証は 401
+- **エラーハンドリング(neverthrow)**: 外部 I/O(気象庁 JSON 取得・Drizzle・S3)は `ResultAsync` でラップし、型付きエラー(例: `FetchError | ParseError | UnknownAreaError | DbError`)として返す。ルートハンドラで HTTP ステータス(400 / 401 / 502 等)へ網羅的にマッピングし、例外はアプリ層に漏らさない。気象庁取得にはタイムアウト(`AbortSignal.timeout`)と軽量なリトライを併用する
 - リクエストボディは `@hono/zod-validator` + `packages/schema` の Zod スキーマで検証(フロントと同一スキーマ)
 - ルートはメソッドチェーンで定義し `export type AppType` を公開 → web 側 `hc<AppType>` で型安全に呼ぶ
 - 気象庁 JSON エンドポイント:
@@ -362,7 +366,7 @@ export const auth = betterAuth({
 1. **ワークスペース骨組み**: pnpm-workspace.yaml / turbo.json / tsconfig.base.json / oxlint・oxfmt 設定 / .env.example / docker-compose.yml
 2. **packages/schema**: Zod スキーマ(signup / login / coordinates)、地域マスタ(気象庁 府県予報区の一覧)、整形ユーティリティ + Vitest
 3. **packages/db**: Drizzle 設定 → Better Auth CLI でスキーマ生成 → `prefecture` 追加フィールドと `coordinate` テーブルを追記 → 初回マイグレーション
-4. **apps/api**: Better Auth インスタンス → Hono ルート(auth マウント → セッションミドルウェア → forecast / coordinates)→ シード → テスト
+4. **apps/api**: Better Auth インスタンス → Hono ルート(auth マウント → セッションミドルウェア → forecast / coordinates)→ neverthrow による外部 I/O のエラー型整備 → シード → テスト
 5. **apps/web**: Next.js 15 + Tailwind v4 + shadcn/ui 導入 → auth-client / RPC client → 画面実装(landing → signup → login → forecast)
 6. **結合確認**: docker の PostgreSQL に対し signup → login → forecast 取得 → コーデ upsert の一連を通す
 7. Should 機能(履歴・設定・削除・天気アイコン・写真アップロード)を順次追加。写真はストレージ契約(S3 互換)を決めてから着手
