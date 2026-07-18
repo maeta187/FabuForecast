@@ -44,9 +44,10 @@
 | 10 | バリデーション | **Zod**(フロント/バックで共有) | 現行踏襲。Hono の zValidator・RHF resolver 両対応 |
 | 11 | テスト | **Vitest を導入** | 現行テストゼロからの改善 |
 | 12 | Storybook | **見送り** | 規模に対して維持コストが高い |
-| 13 | Husky + lint-staged | **見送り** | ESLint/Prettier は手動実行 |
+| 13 | Husky + lint-staged | **見送り** | lint / format は手動実行 |
 | 14 | CI(GitHub Actions) | **今回は見送り** | 後から追加可能 |
 | 15 | 天気予報 API | **気象庁 JSON(bosai)** | 国内特化。府県予報区コードで取得でき地域選択の設計と直結。無料・出典明記で商用利用可(§9 参照) |
+| 16 | Lint / Format | **oxlint + oxfmt(VoidZero / Oxc)** | Rust 製で高速。oxlint は 1.0 安定版、oxfmt は Prettier 互換(JS/TS 適合テスト100%)で Tailwind クラスソート内蔵 |
 
 ---
 
@@ -65,7 +66,7 @@
 | フォーム | React Hook Form + @hookform/resolvers |
 | 外部 API | 気象庁 天気予報 JSON(API キー不要・出典明記で利用) |
 | テスト | Vitest |
-| Lint / Format | ESLint(flat config)+ Prettier |
+| Lint / Format | oxlint + oxfmt(Oxc ツールチェーン) |
 
 ---
 
@@ -319,7 +320,14 @@ export const auth = betterAuth({
 | `pnpm dev` | web + api を並行起動(turbo) |
 | `pnpm db:generate` / `pnpm db:migrate` | drizzle-kit マイグレーション |
 | `pnpm db:seed` | シード(Better Auth `auth.api.signUpEmail` 経由でテストユーザー作成) |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` | 品質チェック(手動実行) |
+| `pnpm lint` / `pnpm format` | oxlint / oxfmt(手動実行) |
+| `pnpm typecheck` / `pnpm test` | tsc / Vitest(手動実行) |
+
+### Lint / Format(VoidZero / Oxc)
+
+- **oxlint**(1.x 安定版): ESLint 代替。設定は `.oxlintrc.json`(または `oxlint.config.ts`)。unused-imports 相当など主要ルールを有効化
+- **oxfmt**(ベータ): Prettier 代替。JS/TS の Prettier 適合テスト100%通過・**Tailwind クラスソート内蔵**(prettier-plugin-tailwindcss が不要になる)。1.0 までは挙動変更の可能性がある点のみ留意
+- Turborepo に公式の Oxc(oxlint / oxfmt)導入ガイドがあり、モノレポ構成と干渉しない
 
 ### テスト方針(Vitest)
 
@@ -346,7 +354,7 @@ export const auth = betterAuth({
 
 ## 13. 新リポジトリ立ち上げ手順(推奨順)
 
-1. **ワークスペース骨組み**: pnpm-workspace.yaml / turbo.json / tsconfig.base.json / ESLint flat config / Prettier / .env.example / docker-compose.yml
+1. **ワークスペース骨組み**: pnpm-workspace.yaml / turbo.json / tsconfig.base.json / oxlint・oxfmt 設定 / .env.example / docker-compose.yml
 2. **packages/schema**: Zod スキーマ(signup / login / coordinates)、地域マスタ(気象庁 府県予報区の一覧)、整形ユーティリティ + Vitest
 3. **packages/db**: Drizzle 設定 → Better Auth CLI でスキーマ生成 → `prefecture` 追加フィールドと `coordinate` テーブルを追記 → 初回マイグレーション
 4. **apps/api**: Better Auth インスタンス → Hono ルート(auth マウント → セッションミドルウェア → forecast / coordinates)→ シード → テスト
