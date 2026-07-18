@@ -3,7 +3,7 @@
 新リポジトリで FabuForecast を作り直すための要件・設計ドキュメント。
 本書は現行リポジトリ(Next.js 13 単体構成)のコード調査と、技術選定の議論・調査の結果をまとめたもの。
 
-- 作成日: 2026-07-18(同日更新: 天気APIを気象庁 JSON に変更し、地域切替機能を追加)
+- 作成日: 2026-07-18(同日更新: 天気APIの気象庁 JSON 化・地域切替/写真/AI提案の追加・フロントエンドの TanStack Start への変更 ほか)
 - ステータス: 確定(実装は新リポジトリで行う)
 
 ---
@@ -33,7 +33,7 @@
 | # | 項目 | 決定 | 理由 |
 | --- | --- | --- | --- |
 | 1 | 全体構成 | **pnpm workspace + Turborepo のモノレポ** | フロント/バック分離と型共有の両立 |
-| 2 | フロントエンド | **Next.js(最新: 15系)+ React 19** | App Router 継続。作り直すため最新に刷新 |
+| 2 | フロントエンド | **TanStack Start(v1)+ React 19** | Vite ベースで Vitest / oxlint / oxfmt とツールチェーンが統一。型安全ルーティングが Hono RPC・TS7 の方針と整合。shadcn/ui・Better Auth とも公式対応(Next.js 15 案から変更。RSC 非対応だが本アプリでは不要) |
 | 3 | バックエンド | **Hono**(Node.js ランタイム前提) | 軽量・Web 標準・Hono RPC による end-to-end 型安全 |
 | 4 | BaaS(Supabase 等) | **不採用** | 自前構成で学習・制御性を優先 |
 | 5 | 認証 | **Better Auth** | email/password が第一級サポート。Hono 統合が公式。自前実装(ハッシュ化・セッション管理)を排除できる |
@@ -59,12 +59,13 @@
 | 分類 | 技術 |
 | --- | --- |
 | モノレポ | pnpm workspace + Turborepo |
-| フロントエンド | Next.js 15(App Router)/ React 19 / TypeScript 7 |
+| フロントエンド | TanStack Start v1(TanStack Router + Vite + Nitro)/ React 19 / TypeScript 7 |
 | スタイリング | Tailwind CSS v4 + shadcn/ui |
 | バックエンド | Hono 4 + @hono/node-server(Node.js) |
 | 認証 | Better Auth(email/password、Drizzle アダプタ) |
 | DB / ORM | PostgreSQL + Drizzle ORM + drizzle-kit |
 | API 型共有 | Hono RPC(`hc<AppType>`) |
+| データ取得・キャッシュ | TanStack Query(Hono RPC と併用) |
 | バリデーション | Zod(共有パッケージ) |
 | エラーハンドリング | neverthrow(`apps/api` のみ) |
 | フォーム | React Hook Form + @hookform/resolvers |
@@ -207,10 +208,10 @@ Tailwind v4 前提で shadcn/ui・daisyUI v5・HeroUI を比較調査した。
 ```
 fabuforecast/
 ├── apps/
-│   ├── web/                  # Next.js 15(フロントエンド)
-│   │   ├── src/app/          # App Router(/, /signup, /login, /forecast, ...)
+│   ├── web/                  # TanStack Start(フロントエンド)
+│   │   ├── src/routes/       # TanStack Router ファイルルーティング(/, /signup, /login, /forecast, ...)
 │   │   ├── src/components/   # shadcn/ui 取り込み先 + 独自コンポーネント
-│   │   └── src/lib/          # auth-client, api-client(Hono RPC)
+│   │   └── src/lib/          # auth-client, api-client(Hono RPC + TanStack Query)
 │   └── api/                  # Hono(バックエンド)
 │       ├── src/auth.ts       # Better Auth インスタンス
 │       ├── src/app.ts        # ルート定義(AppType をエクスポート)
@@ -227,10 +228,12 @@ fabuforecast/
 
 ### 通信経路
 
-- ブラウザ → `apps/web`(:3000)→ **Next.js rewrites** で `/api/*` を `apps/api`(:3001)へプロキシ
+- ブラウザ → `apps/web`(:3000)→ `/api/*` を `apps/api`(:3001)へプロキシ
+  - 開発時は **Vite の dev proxy**、本番は **Nitro のサーバールート**(または前段のリバースプロキシ)で転送
   - 同一オリジンになるため CORS/Cookie の問題を回避
-- `apps/web` は `hc<AppType>`(Hono RPC)で API を型安全に呼び出す
+- `apps/web` は `hc<AppType>`(Hono RPC)+ **TanStack Query** で API を型安全に取得・キャッシュする
 - Better Auth のエンドポイントは `/api/auth/*` にマウント(フロントは `better-auth/react` の `createAuthClient`)
+- 保護ルート(`/forecast` 等)は TanStack Router の `beforeLoad` でセッションを確認し、未認証は `/login` へリダイレクト
 
 ---
 
@@ -395,7 +398,7 @@ export const auth = betterAuth({
 2. **packages/schema**: Zod スキーマ(signup / login / coordinates)、地域マスタ(気象庁 府県予報区の一覧)、整形ユーティリティ + Vitest
 3. **packages/db**: Drizzle 設定 → Better Auth CLI でスキーマ生成 → `prefecture` 追加フィールドと `coordinate` テーブルを追記 → 初回マイグレーション
 4. **apps/api**: Better Auth インスタンス → Hono ルート(auth マウント → セッションミドルウェア → forecast / coordinates)→ neverthrow による外部 I/O のエラー型整備 → シード → テスト
-5. **apps/web**: Next.js 15 + Tailwind v4 + shadcn/ui 導入 → auth-client / RPC client → 画面実装(landing → signup → login → forecast)
+5. **apps/web**: TanStack Start + Tailwind v4(`@tailwindcss/vite`)+ shadcn/ui 導入 → auth-client / RPC client / TanStack Query → ルート実装(landing → signup → login → forecast、`beforeLoad` の認証ガード含む)
 6. **結合確認**: docker の PostgreSQL に対し signup → login → forecast 取得 → コーデ upsert の一連を通す
 7. Should 機能(履歴・設定・削除・天気アイコン・写真アップロード)を順次追加。写真はストレージ契約(S3 互換)を決めてから着手
 
