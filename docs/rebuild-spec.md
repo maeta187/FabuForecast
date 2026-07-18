@@ -135,6 +135,7 @@ Tailwind v4 前提で shadcn/ui・daisyUI v5・HeroUI を比較調査した。
 | コーデ写真のアップロード(1日1枚) | Should | S3 互換ストレージに保存し DB にはオブジェクトキーのみ保持。5MB 程度・jpeg/png/webp に制限 |
 | 過去コーデの履歴一覧 | Should | 記録アプリとしての価値。当日の気温・写真サムネイルも併記 |
 | 「似た気温の日に何を着たか」参照 | Could | 差別化機能。予報気温 ±2℃ の過去記録を提示 |
+| AI コーディネート提案(写真 × トレンド × 天気) | Could(将来構想) | §5.5 参照。保存写真・過去記録・トレンド情報・週間予報を組み合わせて LLM が提案を生成 |
 | メモ・小物など項目追加 | Could | |
 
 ### 5.4 共通 UI
@@ -146,6 +147,30 @@ Tailwind v4 前提で shadcn/ui・daisyUI v5・HeroUI を比較調査した。
 | トースト通知 | Must | shadcn/ui(sonner) |
 | レスポンシブ対応 | Must | モバイルはドロワーナビ |
 | ダークモード | Could | |
+
+### 5.5 将来構想: AI コーディネート提案(Could)
+
+保存済みのコーデ写真・過去の着用記録・ファッショントレンド情報・週間予報を組み合わせ、「明日はこの服装がおすすめ」を生成する機能。初回リリースには含めないが、以下を前提に設計段階から布石を打っておく。
+
+**実現方式(想定)**
+
+1. 対象日の予報(気温・天気)を取得
+2. 似た気温(±2℃程度)の過去コーデ(写真 + テキスト)を `coordinate` から抽出
+3. トレンド情報を取得(下記課題参照)
+4. 1〜3 をマルチモーダル LLM API(Claude API 等)に渡し、手持ちの服を踏まえた提案文を生成
+5. `POST /api/suggestions`(将来追加)として提供。生成結果は日付×地域単位でキャッシュしコストを抑制
+
+**今の設計で担保しておくこと(前方互換)**
+
+- `coordinate` に**記録時点の気温スナップショット**(`maxTemperature` / `minTemperature`、nullable)を初回スキーマから持たせる。保存時に表示中の予報値を書き込むだけで、「似た気温の過去コーデ抽出」の材料が自然に蓄積される(後から past データを復元するのは困難なため、これだけは Must フェーズで実装する)
+- コーデ写真は S3 互換ストレージにキーで保存されるため、署名付き URL で LLM に渡せる(追加の基盤変更は不要)
+- 天気取得・提案生成を `apps/api` 内の独立モジュールとして分離しておく(既定の方針どおり)
+
+**課題・リスク(実装時に要調査)**
+
+- **トレンド情報の入手経路が最大の課題**。公開のファッショントレンド API はほぼ存在しないため、候補は (a) Web 検索 API 経由でファッションメディアを要約 (b) 季節・気温帯ごとの静的なトレンド辞書を自前管理 (c) LLM の一般知識に季節情報を添えて委ねる、のいずれか。コストと鮮度のバランスで選定する
+- **LLM API はスタック初の従量課金要素**。ユーザーあたりの生成回数制限とキャッシュを必須とする
+- 法的整理は §9 の方針を踏襲: 気象庁の予報値は改変せずそのまま提案の入力に使う(独自の気象予測を生成しないため予報業務許可は不要のまま)
 
 ---
 
@@ -237,6 +262,8 @@ export const coordinate = pgTable(
     tops: text('tops').notNull().default(''),
     bottoms: text('bottoms').notNull().default(''),
     imageKey: text('image_key'),            // コーデ写真のオブジェクトキー(Should 機能。写真なしは null)
+    maxTemperature: real('max_temperature'), // 記録時点の予報最高気温スナップショット(null 可)
+    minTemperature: real('min_temperature'), // 記録時点の予報最低気温スナップショット(null 可)
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
@@ -251,6 +278,7 @@ export const coordinate = pgTable(
 
 - **Prefecture テーブルを廃止**。地域マスタ(表示名+気象庁地域コード)はコード(`packages/schema`)に持ち、user には気象庁地域コードのみ保存する(正規化とシンプル化)。緯度経度は不要になる
 - **Coordinate に `date` カラムを追加**し、`(userId, date)` を一意制約に(upsert 前提)
+- **Coordinate に気温スナップショット(`maxTemperature` / `minTemperature`)を追加**。保存時に表示中の予報値を書き込み、「似た気温の過去コーデ参照」「AI コーディネート提案」(§5.5)の材料を初回リリース時点から蓄積する
 - パスワードは Better Auth 管理(account テーブルの `password` に scrypt ハッシュ)。現行の bcrypt ハッシュは移行しない(本番ユーザー不在のため)
 
 マイグレーションは drizzle-kit(`drizzle-kit generate` / `migrate`)で管理する。
