@@ -3,7 +3,7 @@
 新リポジトリで FabuForecast を作り直すための要件・設計ドキュメント。
 本書は現行リポジトリ(Next.js 13 単体構成)のコード調査と、技術選定の議論・調査の結果をまとめたもの。
 
-- 作成日: 2026-07-18
+- 作成日: 2026-07-18(同日更新: 天気APIを気象庁 JSON に変更し、地域切替機能を追加)
 - ステータス: 確定(実装は新リポジトリで行う)
 
 ---
@@ -46,6 +46,7 @@
 | 12 | Storybook | **見送り** | 規模に対して維持コストが高い |
 | 13 | Husky + lint-staged | **見送り** | ESLint/Prettier は手動実行 |
 | 14 | CI(GitHub Actions) | **今回は見送り** | 後から追加可能 |
+| 15 | 天気予報 API | **気象庁 JSON(bosai)** | 国内特化。府県予報区コードで取得でき地域選択の設計と直結。無料・出典明記で商用利用可(§9 参照) |
 
 ---
 
@@ -62,7 +63,7 @@
 | API 型共有 | Hono RPC(`hc<AppType>`) |
 | バリデーション | Zod(共有パッケージ) |
 | フォーム | React Hook Form + @hookform/resolvers |
-| 外部 API | Open-Meteo(天気予報。API キー不要) |
+| 外部 API | 気象庁 天気予報 JSON(API キー不要・出典明記で利用) |
 | テスト | Vitest |
 | Lint / Format | ESLint(flat config)+ Prettier |
 
@@ -100,7 +101,7 @@ Tailwind v4 前提で shadcn/ui・daisyUI v5・HeroUI を比較調査した。
 
 | 機能 | 優先度 | 備考 |
 | --- | --- | --- |
-| 会員登録(メール+パスワード+ユーザー名+登録地域) | Must | Better Auth `signUp.email` + additionalFields で都道府県を保存 |
+| 会員登録(メール+パスワード+ユーザー名+登録地域) | Must | Better Auth `signUp.email` + additionalFields で地域コードを保存 |
 | ログイン / ログアウト | Must | Better Auth `signIn.email` / `signOut` |
 | セッション管理・保護ページ | Must | DB セッション(Cookie)。未ログインは `/login` へ |
 | アカウント設定(登録地域・ユーザー名・パスワード変更) | Should | Better Auth `updateUser` / `changePassword` |
@@ -112,10 +113,12 @@ Tailwind v4 前提で shadcn/ui・daisyUI v5・HeroUI を比較調査した。
 
 | 機能 | 優先度 | 備考 |
 | --- | --- | --- |
-| 登録地域の週間予報(最高/最低気温) | Must | Open-Meteo。ユーザーの都道府県 → 緯度経度で取得(現行のハードコードを解消) |
-| 47都道府県マスタ | Must | 現行3件 → 全県。コード内マスタ(name/value/緯度/経度) |
-| 天気アイコン(晴れ/曇り/雨) | Should | Open-Meteo の `weathercode` を追加取得 |
-| 降水確率 | Could | `precipitation_probability_max` |
+| 登録地域の週間予報(最高/最低気温) | Must | 気象庁 JSON。ユーザーの登録地域コードで取得(現行のハードコードを解消) |
+| 地域マスタ(気象庁 府県予報区) | Must | 現行3件 → 全国。コード内マスタ(表示名+気象庁地域コード)。北海道・沖縄などは気象庁の区分に合わせて細分(全56区分程度) |
+| 表示地域の切替(一覧から選択) | Must | 予報画面のセレクタで任意の地域の予報を閲覧できる。登録地域はデフォルト表示地域として扱う |
+| 天気アイコン(晴れ/曇り/雨) | Should | 気象庁 JSON の天気コードをアイコンにマッピング |
+| 降水確率 | Should | 同じレスポンスに含まれるため追加リクエスト不要 |
+| 出典表記(「出典: 気象庁ホームページ」) | Must | 政府標準利用規約の要件。予報表示部またはフッターに常時表示 |
 
 ### 5.3 コーディネート(中核機能)
 
@@ -147,7 +150,7 @@ Tailwind v4 前提で shadcn/ui・daisyUI v5・HeroUI を比較調査した。
 | `/` | ランディング | 不要 | Must |
 | `/signup` | 会員登録 | 不要 | Must |
 | `/login` | ログイン | 不要 | Must |
-| `/forecast` | 週間予報+コーデ入力(メイン画面) | 必要 | Must |
+| `/forecast` | 週間予報+コーデ入力(メイン画面)。地域切替セレクタ付き | 必要 | Must |
 | `/history` | 過去コーデ履歴 | 必要 | Should |
 | `/settings` | アカウント設定 | 必要 | Should |
 
@@ -159,7 +162,7 @@ Tailwind v4 前提で shadcn/ui・daisyUI v5・HeroUI を比較調査した。
 | --- | --- |
 | ユーザー名(ユーザーID) | 必須 / 8文字以上 / 英数字のみ |
 | メールアドレス | 必須 / メール形式 |
-| 登録地域 | 必須 / 47都道府県マスタに存在する値 |
+| 登録地域 | 必須 / 地域マスタ(気象庁 府県予報区)に存在するコード |
 | パスワード | 必須 / 8〜20文字 / 小文字英字と数字を含む |
 | パスワード確認 | パスワードと一致 |
 | コーデ各項目 | 任意 / 最大50文字程度 |
@@ -184,7 +187,7 @@ fabuforecast/
 │       └── scripts/seed.ts   # シードスクリプト
 ├── packages/
 │   ├── db/                   # Drizzle スキーマ + クライアント + drizzle-kit 設定
-│   └── schema/               # Zod スキーマ / 都道府県マスタ / 共有型・整形ユーティリティ
+│   └── schema/               # Zod スキーマ / 地域マスタ(気象庁コード) / 共有型・整形ユーティリティ
 ├── docker-compose.yml        # PostgreSQL
 ├── turbo.json
 ├── pnpm-workspace.yaml
@@ -212,7 +215,7 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
-  prefecture: text('prefecture').notNull(), // ★ additionalField: 都道府県コード(例 'tokyo')
+  areaCode: text('area_code').notNull(),    // ★ additionalField: 気象庁地域コード(例 '130000' = 東京都)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 })
@@ -239,7 +242,7 @@ export const coordinate = pgTable(
 
 現行スキーマからの変更点:
 
-- **Prefecture テーブルを廃止**。緯度経度付きの47都道府県マスタはコード(`packages/schema`)に持ち、user には都道府県コードのみ保存する(正規化とシンプル化)
+- **Prefecture テーブルを廃止**。地域マスタ(表示名+気象庁地域コード)はコード(`packages/schema`)に持ち、user には気象庁地域コードのみ保存する(正規化とシンプル化)。緯度経度は不要になる
 - **Coordinate に `date` カラムを追加**し、`(userId, date)` を一意制約に(upsert 前提)
 - パスワードは Better Auth 管理(account テーブルの `password` に scrypt ハッシュ)。現行の bcrypt ハッシュは移行しない(本番ユーザー不在のため)
 
@@ -252,7 +255,7 @@ export const coordinate = pgTable(
 | メソッド / パス | 認証 | 内容 |
 | --- | --- | --- |
 | `ALL /api/auth/*` | - | Better Auth ハンドラ(signup / login / logout / session / updateUser 等) |
-| `GET /api/forecast` | 必要 | ユーザーの都道府県 → 緯度経度で Open-Meteo から週間予報を取得し整形して返す |
+| `GET /api/forecast?area={code}` | 必要 | 気象庁 JSON から週間予報を取得し整形して返す。`area` 省略時はユーザーの登録地域、指定時はマスタ照合の上その地域(地域切替用) |
 | `GET /api/coordinates?from&to` | 必要 | 自分のコーデ一覧(期間指定可) |
 | `PUT /api/coordinates` | 必要 | `{ items: [{ date, outerwear, tops, bottoms }] }` を一括 upsert |
 | `DELETE /api/coordinates/:date` | 必要 | 指定日のコーデ削除(Should) |
@@ -260,8 +263,11 @@ export const coordinate = pgTable(
 - セッション判定はミドルウェアで `auth.api.getSession({ headers })` を実行し、`c.get('user')` に格納。未認証は 401
 - リクエストボディは `@hono/zod-validator` + `packages/schema` の Zod スキーマで検証(フロントと同一スキーマ)
 - ルートはメソッドチェーンで定義し `export type AppType` を公開 → web 側 `hc<AppType>` で型安全に呼ぶ
-- Open-Meteo リクエスト例:
-  `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Asia%2FTokyo`
+- 気象庁 JSON エンドポイント:
+  `https://www.jma.go.jp/bosai/forecast/data/forecast/{地域コード}.json`
+  - 非公式 API のため、取得・整形は `apps/api` 内の1モジュールに隔離し、仕様変更時に差し替え可能な構造にする(レスポンスは入れ子が深いため、週間予報の気温・降水確率・天気コードを共通の `Forecast` 型へ正規化する)
+  - **地域コード単位でサーバー側キャッシュ(30〜60分)**を行い、気象庁サーバーへの負荷をユーザー数に比例させない
+  - 利用条件: 政府標準利用規約(CC BY 4.0 互換)に基づき出典明記で商用利用可。予報は改変せず「そのまま表示」し、独自予報の生成はしない(気象業務法上の予報業務許可を不要に保つ)
 
 ---
 
@@ -281,14 +287,14 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      prefecture: { type: 'string', required: true, input: true }
+      areaCode: { type: 'string', required: true, input: true }
     }
   }
 })
 ```
 
-- 会員登録はフロントから `authClient.signUp.email({ email, password, name, prefecture })` の1回で完了(現行の自前 `/api/signin` は不要になる)
-- フロントは `createAuthClient` + `inferAdditionalFields` プラグインで `prefecture` を型付け
+- 会員登録はフロントから `authClient.signUp.email({ email, password, name, areaCode })` の1回で完了(現行の自前 `/api/signin` は不要になる)
+- フロントは `createAuthClient` + `inferAdditionalFields` プラグインで `areaCode` を型付け
 - パスワードの文字種ルール(小文字+数字)は Zod スキーマでフロント/バック両方で検証
 
 ---
@@ -317,13 +323,13 @@ export const auth = betterAuth({
 
 ### テスト方針(Vitest)
 
-- `packages/schema`: バリデーションスキーマ、都道府県マスタ(47件・値の一意性)、日付/気温整形ユーティリティ
-- `apps/api`: 予報データ整形、URL 組み立て、認証ミドルウェアの 401 応答
+- `packages/schema`: バリデーションスキーマ、地域マスタ(コードの一意性・形式)、日付/気温整形ユーティリティ
+- `apps/api`: 気象庁 JSON → `Forecast` 型への正規化、キャッシュ動作、認証ミドルウェアの 401 応答
 - UI テスト・E2E は今回スコープ外(将来 Playwright を検討)
 
 ### シードデータ
 
-- テストユーザー: `admin@example.com` / `password123` / 都道府県 `tokyo`
+- テストユーザー: `admin@example.com` / `password123` / 地域 `130000`(東京都)
 - サンプルコーデ2件(パスワードは Better Auth の API 経由で作成し、ハッシュ形式を揃える)
 
 ---
@@ -341,7 +347,7 @@ export const auth = betterAuth({
 ## 13. 新リポジトリ立ち上げ手順(推奨順)
 
 1. **ワークスペース骨組み**: pnpm-workspace.yaml / turbo.json / tsconfig.base.json / ESLint flat config / Prettier / .env.example / docker-compose.yml
-2. **packages/schema**: Zod スキーマ(signup / login / coordinates)、47都道府県マスタ、整形ユーティリティ + Vitest
+2. **packages/schema**: Zod スキーマ(signup / login / coordinates)、地域マスタ(気象庁 府県予報区の一覧)、整形ユーティリティ + Vitest
 3. **packages/db**: Drizzle 設定 → Better Auth CLI でスキーマ生成 → `prefecture` 追加フィールドと `coordinate` テーブルを追記 → 初回マイグレーション
 4. **apps/api**: Better Auth インスタンス → Hono ルート(auth マウント → セッションミドルウェア → forecast / coordinates)→ シード → テスト
 5. **apps/web**: Next.js 15 + Tailwind v4 + shadcn/ui 導入 → auth-client / RPC client → 画面実装(landing → signup → login → forecast)
@@ -353,6 +359,6 @@ export const auth = betterAuth({
 ## 付録: 現行リポジトリから引き継ぐ資産
 
 - 日本語バリデーションメッセージと入力ルール(§6)
-- 都道府県マスタの型(name / value / latitude / longitude)と `findPrefecture` の考え方
+- 「一覧から地域を選択する」UI の考え方(現行の都道府県セレクトを気象庁 府県予報区の一覧セレクタに発展させる)
 - 気温整形(`YYYY年M月D日` / `℃` 表示)の仕様
 - ヒーロー画像(`public/clouds.jpg`)は任意で流用
