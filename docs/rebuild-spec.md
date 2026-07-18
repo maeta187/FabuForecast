@@ -48,6 +48,7 @@
 | 14 | CI(GitHub Actions) | **今回は見送り** | 後から追加可能 |
 | 15 | 天気予報 API | **気象庁 JSON(bosai)** | 国内特化。府県予報区コードで取得でき地域選択の設計と直結。無料・出典明記で商用利用可(§9 参照) |
 | 16 | Lint / Format | **oxlint + oxfmt(VoidZero / Oxc)** | Rust 製で高速。oxlint は 1.0 安定版、oxfmt は Prettier 互換(JS/TS 適合テスト100%)で Tailwind クラスソート内蔵 |
+| 17 | 画像ストレージ | **S3 互換 API 前提(サービスは未定)** | コーデ写真(Should)の保存先。コードは S3 互換 SDK で書き、契約先(R2 / S3 等)は実装時に決定。ローカル開発は MinIO(Docker) |
 
 ---
 
@@ -127,8 +128,9 @@ Tailwind v4 前提で shadcn/ui・daisyUI v5・HeroUI を比較調査した。
 | --- | --- | --- |
 | 日付ごとのコーデ登録(アウター/トップス/ボトムス) | Must | 現行未実装の保存 API を含む。ユーザー×日付で一意(upsert) |
 | 保存済みコーデの表示・編集 | Must | 予報画面に既存データを反映 |
-| コーデの削除 | Should | |
-| 過去コーデの履歴一覧 | Should | 記録アプリとしての価値。当日の気温も併記 |
+| コーデの削除 | Should | 写真がある場合はストレージのオブジェクトも削除 |
+| コーデ写真のアップロード(1日1枚) | Should | S3 互換ストレージに保存し DB にはオブジェクトキーのみ保持。5MB 程度・jpeg/png/webp に制限 |
+| 過去コーデの履歴一覧 | Should | 記録アプリとしての価値。当日の気温・写真サムネイルも併記 |
 | 「似た気温の日に何を着たか」参照 | Could | 差別化機能。予報気温 ±2℃ の過去記録を提示 |
 | メモ・小物など項目追加 | Could | |
 
@@ -231,6 +233,7 @@ export const coordinate = pgTable(
     outerwear: text('outerwear').notNull().default(''),
     tops: text('tops').notNull().default(''),
     bottoms: text('bottoms').notNull().default(''),
+    imageKey: text('image_key'),            // コーデ写真のオブジェクトキー(Should 機能。写真なしは null)
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
@@ -259,7 +262,8 @@ export const coordinate = pgTable(
 | `GET /api/forecast?area={code}` | 必要 | 気象庁 JSON から週間予報を取得し整形して返す。`area` 省略時はユーザーの登録地域、指定時はマスタ照合の上その地域(地域切替用) |
 | `GET /api/coordinates?from&to` | 必要 | 自分のコーデ一覧(期間指定可) |
 | `PUT /api/coordinates` | 必要 | `{ items: [{ date, outerwear, tops, bottoms }] }` を一括 upsert |
-| `DELETE /api/coordinates/:date` | 必要 | 指定日のコーデ削除(Should) |
+| `DELETE /api/coordinates/:date` | 必要 | 指定日のコーデ削除。写真があればストレージのオブジェクトも削除(Should) |
+| `POST /api/uploads` | 必要 | コーデ写真用の署名付きURL(presigned URL)を発行(Should)。ブラウザからストレージへ直接 PUT し、API サーバーに画像は通さない |
 
 - セッション判定はミドルウェアで `auth.api.getSession({ headers })` を実行し、`c.get('user')` に格納。未認証は 401
 - リクエストボディは `@hono/zod-validator` + `packages/schema` の Zod スキーマで検証(フロントと同一スキーマ)
@@ -311,6 +315,7 @@ export const auth = betterAuth({
 | `BETTER_AUTH_URL` | 公開オリジン(例: `http://localhost:3000`) |
 | `WEB_ORIGIN` | trustedOrigins 用 |
 | `API_PORT` / `API_ORIGIN` | API サーバのポート / rewrites 先 |
+| `STORAGE_ENDPOINT` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` | S3 互換ストレージ接続情報(Should: 写真アップロード導入時に追加。ローカルは MinIO を docker-compose に追加) |
 
 ### 開発コマンド(ルート)
 
@@ -360,7 +365,7 @@ export const auth = betterAuth({
 4. **apps/api**: Better Auth インスタンス → Hono ルート(auth マウント → セッションミドルウェア → forecast / coordinates)→ シード → テスト
 5. **apps/web**: Next.js 15 + Tailwind v4 + shadcn/ui 導入 → auth-client / RPC client → 画面実装(landing → signup → login → forecast)
 6. **結合確認**: docker の PostgreSQL に対し signup → login → forecast 取得 → コーデ upsert の一連を通す
-7. Should 機能(履歴・設定・削除・天気アイコン)を順次追加
+7. Should 機能(履歴・設定・削除・天気アイコン・写真アップロード)を順次追加。写真はストレージ契約(S3 互換)を決めてから着手
 
 ---
 
